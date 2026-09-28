@@ -1,14 +1,23 @@
--- Напишите запросы, которые выводят следующую информацию:
--- 1. заказы, доставленные в страны France, Germany, Spain (таблица orders, колонка ship_country)
-SELECT ...
+SELECT ship_country, SUM(freight) AS sum
+FROM orders
+GROUP BY ship_country
+ORDER BY sum DESC
+LIMIT 3;
 
--- 2. уникальные страны и города, куда отправлялись заказы, отсортировать по странам и городам (таблица orders, колонки ship_country, ship_city)
+SELECT order_id, customer_id, freight, ship_country
+FROM orders
+WHERE ship_country IN ('Portugal', 'Poland')
+ORDER BY freight DESC
+LIMIT 10;
 
+SELECT MIN(unit_price) AS min, MAX(unit_price) AS max
+FROM products;
 
--- 3. сколько дней в среднем уходит на доставку товара в Германию (таблица orders, колонки order_date, shipped_date, ship_country)
+SELECT MIN(unit_price) AS min, MAX(unit_price) AS max
+FROM products
+WHERE discontinued = 0;
 
-
--- 4. минимальную и максимальную цену среди продуктов, не снятых с продажи (таблица products, колонки unit_price, discontinued не равно 1)
-
-
--- 5. минимальную и максимальную цену среди продуктов, не снятых с продажи и которых имеется не меньше 20 (таблица products, колонки unit_price, units_in_stock, discontinued не равно 1)
+SELECT DISTINCT country
+FROM customers
+WHERE country IN ('UK', 'USA')
+ORDER BY country;
