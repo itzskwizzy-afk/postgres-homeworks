@@ -1,20 +1,27 @@
--- Напишите запросы, которые выводят следующую информацию:
--- 1. заказы, отправленные в города, заканчивающиеся на 'burg'. Вывести без повторений две колонки (город, страна) (см. таблица orders, колонки ship_city, ship_country)
+SELECT country, COUNT(*) AS count
+FROM customers
+GROUP BY country
+ORDER BY count DESC;
 
+SELECT country
+FROM customers
+GROUP BY country
+ORDER BY COUNT(*) DESC
+LIMIT 10;
 
--- 2. из таблицы orders идентификатор заказа, идентификатор заказчика, вес и страну отгрузки. Заказ отгружен в страны, начинающиеся на 'P'. Результат отсортирован по весу (по убыванию). Вывести первые 10 записей.
+SELECT DISTINCT ship_city AS city
+FROM orders
+ORDER BY city;
 
+SELECT COUNT(*) AS count FROM orders;
 
--- 3. имя, фамилию и телефон сотрудников, у которых в данных отсутствует регион (см таблицу employees)
+SELECT COUNT(*) AS count
+FROM orders
+WHERE order_date BETWEEN '1997-01-01' AND '1997-12-31';
 
+SELECT AVG(freight) AS avg FROM orders;
 
--- 4. количество поставщиков (suppliers) в каждой из стран. Результат отсортировать по убыванию количества поставщиков в стране
-
-
--- 5. суммарный вес заказов (в которых известен регион) по странам, но вывести только те результаты, где суммарный вес на страну больше 2750. Отсортировать по убыванию суммарного веса (см таблицу orders, колонки ship_region, ship_country, freight)
-
-
--- 6. страны, в которых зарегистрированы и заказчики (customers) и поставщики (suppliers) и работники (employees).
-
-
--- 7. страны, в которых зарегистрированы и заказчики (customers) и поставщики (suppliers), но не зарегистрированы работники (employees).
+SELECT order_id, COUNT(*) AS count
+FROM order_details
+GROUP BY order_id
+ORDER BY order_id;
