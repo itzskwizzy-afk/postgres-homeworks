@@ -1,17 +1,3 @@
-"""
-Домашнее задание 5. Лучшие практики по БД.
-
-Программа за один запуск:
-  1. создаёт новую базу данных из файла fill_db.sql;
-  2. добавляет в неё таблицу suppliers с данными из suppliers.json;
-  3. связывает таблицу products с таблицей suppliers (FOREIGN KEY).
-
-Запуск:
-    python main.py
-
-Параметры подключения читаются из файла database.ini.
-"""
-
 import json
 import re
 from pathlib import Path
@@ -27,22 +13,12 @@ JSON_FILE = BASE_DIR / "suppliers.json"
 DB_NAME = "northwind_suppliers"
 
 
-# ----------------------------------------------------------------------
-# 1. Создание базы данных
-# ----------------------------------------------------------------------
 def create_database(params: dict, db_name: str) -> None:
-    """Создаёт новую базу данных.
-
-    CREATE DATABASE нельзя выполнять внутри транзакции, поэтому подключаемся
-    к служебной базе 'postgres' с autocommit=True.
-    """
     connect_params = dict(params)
     connect_params.pop("dbname", None)
     connect_params["dbname"] = "postgres"
 
     conn = psycopg2.connect(**connect_params)
-    # autocommit включаем сразу, до первого запроса:
-    # CREATE DATABASE нельзя выполнять внутри транзакции
     conn.autocommit = True
     try:
         with conn.cursor() as cur:
@@ -59,16 +35,7 @@ def create_database(params: dict, db_name: str) -> None:
         conn.close()
 
 
-# ----------------------------------------------------------------------
-# 2. Выполнение SQL-скрипта
-# ----------------------------------------------------------------------
 def split_sql_statements(script: str) -> list[str]:
-    """Делит SQL-скрипт на отдельные запросы по ';'.
-
-    Разделитель внутри строковой константы ('...' или "...") не считается
-    концом запроса, поэтому данные с точкой с запятой не ломают скрипт.
-    Строчные комментарии (-- ...) отбрасываются.
-    """
     statements: list[str] = []
     buffer: list[str] = []
     in_single = False
@@ -94,7 +61,6 @@ def split_sql_statements(script: str) -> list[str]:
             continue
 
         if char == "'" and not in_double:
-            # экранированная кавычка внутри строки — '' (например, 'O''Brien')
             if in_single and next_char == "'":
                 buffer.append(char)
                 buffer.append(next_char)
@@ -121,7 +87,6 @@ def split_sql_statements(script: str) -> list[str]:
 
 
 def execute_sql_script(cur, script_file: str) -> None:
-    """Выполняет скрипт из файла для заполнения БД данными."""
     with open(script_file, encoding="utf-8") as file:
         script = file.read()
 
@@ -133,11 +98,7 @@ def execute_sql_script(cur, script_file: str) -> None:
     print(f"  всего выполнено запросов: {len(statements)}")
 
 
-# ----------------------------------------------------------------------
-# 3. Таблица поставщиков
-# ----------------------------------------------------------------------
 def create_suppliers_table(cur) -> None:
-    """Создаёт таблицу suppliers."""
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS suppliers (
@@ -158,17 +119,12 @@ def create_suppliers_table(cur) -> None:
 
 
 def clean_value(value: str) -> str:
-    """Убирает служебные символы '#' и лишние пробелы."""
     if value is None:
         return ""
     return re.sub(r"\s+", " ", value.replace("#", "")).strip()
 
 
 def parse_address(raw_address: str) -> dict:
-    """Разбирает адрес вида 'UK; ; EC1 4SD; London; 49 Gilbert St.'.
-
-    Порядок частей: страна; регион; индекс; город; улица.
-    """
     parts = [clean_value(part) for part in (raw_address or "").split(";")]
     parts += [""] * (5 - len(parts))
     country, state, postal_code, city, street = parts[:5]
@@ -182,7 +138,6 @@ def parse_address(raw_address: str) -> dict:
 
 
 def get_suppliers_data(json_file: str) -> list[dict]:
-    """Извлекает данные о поставщиках из JSON-файла и возвращает список словарей."""
     with open(json_file, encoding="utf-8") as file:
         raw_data = json.load(file)
 
@@ -205,7 +160,6 @@ def get_suppliers_data(json_file: str) -> list[dict]:
 
 
 def insert_suppliers_data(cur, suppliers: list[dict]) -> None:
-    """Добавляет данные из suppliers в таблицу suppliers."""
     cur.executemany(
         """
         INSERT INTO suppliers (
@@ -234,12 +188,7 @@ def insert_suppliers_data(cur, suppliers: list[dict]) -> None:
     )
 
 
-# ----------------------------------------------------------------------
-# 4. Связь products -> suppliers
-# ----------------------------------------------------------------------
 def add_foreign_keys(cur, json_file: str) -> None:
-    """Добавляет foreign key со ссылкой на supplier_id в таблицу products."""
-    # 4.1. В fill_db.sql таблица products создана без колонки supplier_id — добавляем её
     cur.execute(
         """
         ALTER TABLE products
@@ -247,7 +196,6 @@ def add_foreign_keys(cur, json_file: str) -> None:
         """
     )
 
-    # 4.2. Сопоставляем товары и поставщиков по названию
     with open(json_file, encoding="utf-8") as file:
         raw_data = json.load(file)
 
@@ -270,7 +218,6 @@ def add_foreign_keys(cur, json_file: str) -> None:
         )
         updated += 1
 
-    # 4.3. Внешний ключ на suppliers
     cur.execute(
         """
         ALTER TABLE products
@@ -292,9 +239,6 @@ def add_foreign_keys(cur, json_file: str) -> None:
               f"(например: {', '.join(unmatched[:5])})")
 
 
-# ----------------------------------------------------------------------
-# Главный сценарий
-# ----------------------------------------------------------------------
 def main() -> None:
     params = config(filename=str(BASE_DIR / "database.ini"))
 
@@ -321,7 +265,6 @@ def main() -> None:
                 add_foreign_keys(cur, str(JSON_FILE))
                 print("FOREIGN KEY успешно добавлены")
 
-                # Проверка: сколько товаров теперь связано с поставщиком
                 cur.execute(
                     """
                     SELECT COUNT(*) AS linked
